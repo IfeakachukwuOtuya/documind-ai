@@ -1,0 +1,30 @@
+
+# DocuMind configuration (development defaults).
+# Every value here changes how the system behaves.
+# RULE: bump config_version whenever you change a value that affects answers.
+
+config_version: "1.0.0"
+
+# "offline" = free local stand-ins, "bedrock" = real AWS models
+mode: offline
+aws_region: eu-west-2
+
+# Embedding model (changing these means the index must be rebuilt)
+embedding_model_id: amazon.titan-embed-text-v2:0
+embedding_dimensions: 1024
+
+# Generation model
+generation_model_id: anthropic.claude-3-5-sonnet-20240620-v1:0
+temperature: 0.0
+max_tokens: 500
+
+# Chunking (changing these means the index must be rebuilt)
+chunk_size: 400
+chunk_overlap: 80
+
+# Retrieval
+top_k: 4
+
+# Folders
+docs_dir: data/docs
+index_dir: index

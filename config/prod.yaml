@@ -1,0 +1,4 @@
+
+# Production overrides. Only list values that DIFFER from default.yaml.
+mode: bedrock
+index_dir: index_prod
