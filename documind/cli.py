@@ -1,10 +1,11 @@
-
 """
 Command line entry point.
+  python -m documind.cli config
   python -m documind.cli index
   python -m documind.cli ask "How many days of annual leave do I get?"
 """
 import argparse
+import json
 
 from .config import settings
 from .pipeline import DocuMind
@@ -13,10 +14,16 @@ from .pipeline import DocuMind
 def main() -> None:
     parser = argparse.ArgumentParser(prog="documind")
     sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("config", help="Show the active configuration")
     sub.add_parser("index", help="Build the search index from data/docs")
     ask = sub.add_parser("ask", help="Ask a question")
     ask.add_argument("question")
     args = parser.parse_args()
+
+    if args.command == "config":
+        print(json.dumps(settings.model_dump(), indent=2))
+        print(f"fingerprint: {settings.fingerprint()}")
+        return
 
     app = DocuMind(settings)
     if args.command == "index":
@@ -28,6 +35,7 @@ def main() -> None:
         print("\nRetrieved:")
         for s in answer.sources:
             print(f"  {s['score']:.3f}  {s['chunk_id']}")
+        print(f"\nconfig {answer.config_version} | fingerprint {answer.config_fingerprint}")
 
 
 if __name__ == "__main__":

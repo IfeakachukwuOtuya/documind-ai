@@ -1,4 +1,3 @@
-
 """
 ORCHESTRATION: the code that runs the steps in the right order.
 
@@ -8,7 +7,10 @@ Two flows:
 
 The [MODULE n] comments mark exactly where each later module plugs in.
 """
+import json
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
 
 from .config import Settings
 from .embed import get_embedder
@@ -22,6 +24,12 @@ class Answer:
     question: str
     text: str
     sources: list[dict] = field(default_factory=list)  # what was retrieved, with scores
+    config_version: str = ""      # which config file version produced this answer
+    config_fingerprint: str = ""  # hash of every answer-affecting setting
+
+
+class IndexMismatchError(RuntimeError):
+    """The saved index was built with different settings from the ones running now."""
 
 
 class DocuMind:
@@ -41,11 +49,40 @@ class DocuMind:
         self.store.add(chunks, vectors)
         # [MODULE 4 - Hybrid search] also build a keyword (BM25) index here.
         self.store.save(self.settings.index_dir)
+        self._write_manifest(len(chunks))
         return len(chunks)
+
+    def _write_manifest(self, chunk_count: int) -> None:
+        """Record exactly what this index was built with, next to the index itself."""
+        manifest = {
+            "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "config_version": self.settings.config_version,
+            "config_fingerprint": self.settings.fingerprint(),
+            "chunk_count": chunk_count,
+            "signature": self.settings.index_signature(),
+        }
+        path = Path(self.settings.index_dir) / "manifest.json"
+        path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    def _check_manifest(self) -> None:
+        """Refuse to answer from an index built with different embedding or chunk settings."""
+        path = Path(self.settings.index_dir) / "manifest.json"
+        if not path.exists():
+            raise IndexMismatchError("No manifest found. Rebuild the index: python -m documind.cli index")
+        built_with = json.loads(path.read_text(encoding="utf-8"))["signature"]
+        running_with = self.settings.index_signature()
+        differences = {k: (built_with.get(k), v) for k, v in running_with.items() if built_with.get(k) != v}
+        if differences:
+            details = ", ".join(f"{k}: index={old!r} config={new!r}" for k, (old, new) in differences.items())
+            raise IndexMismatchError(
+                f"Index does not match current config ({details}). "
+                "Rebuild it: python -m documind.cli index"
+            )
 
     # ---------------- ANSWERING FLOW ----------------
     def ask(self, question: str) -> Answer:
         if self.store is None:
+            self._check_manifest()
             self.store = VectorStore.load(self.settings.index_dir)
 
         # [MODULE 5 - Guardrails] check the INPUT: PII, off-topic, injection attempts.
@@ -62,4 +99,6 @@ class DocuMind:
 
         sources = [{"chunk_id": c.chunk_id, "source": c.source, "score": round(s, 3)}
                    for c, s in retrieved]
-        return Answer(question=question, text=text, sources=sources)
+        return Answer(question=question, text=text, sources=sources,
+                      config_version=self.settings.config_version,
+                      config_fingerprint=self.settings.fingerprint())
