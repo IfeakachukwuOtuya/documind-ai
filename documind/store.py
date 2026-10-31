@@ -1,10 +1,10 @@
-
 """
 STEP 3 of indexing: store vectors in a FAISS index so we can search them fast.
 
 FAISS compares the question's vector with every chunk's vector and returns the
 closest ones. We save the chunk text alongside so we can show it and cite it.
 """
+
 import json
 from dataclasses import asdict
 from pathlib import Path
@@ -18,7 +18,7 @@ from .ingest import Chunk
 class VectorStore:
     def __init__(self, dim: int):
         # Inner product on normalised vectors = cosine similarity (1.0 = identical meaning).
-        self.index = faiss.IndexFlatIP(dim)
+        self.index: faiss.Index = faiss.IndexFlatIP(dim)
         self.chunks: list[Chunk] = []
 
     def add(self, chunks: list[Chunk], vectors: np.ndarray) -> None:
@@ -27,7 +27,7 @@ class VectorStore:
 
     def search(self, query_vector: np.ndarray, k: int) -> list[tuple[Chunk, float]]:
         scores, ids = self.index.search(query_vector.reshape(1, -1), k)
-        return [(self.chunks[i], float(s)) for i, s in zip(ids[0], scores[0]) if i != -1]
+        return [(self.chunks[i], float(s)) for i, s in zip(ids[0], scores[0], strict=True) if i != -1]
 
     def save(self, index_dir: str) -> None:
         Path(index_dir).mkdir(parents=True, exist_ok=True)

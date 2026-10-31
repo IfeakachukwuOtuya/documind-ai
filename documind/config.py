@@ -8,6 +8,7 @@ Settings come from three layers. Later layers win:
 
 The environment is chosen with DOCUMIND_ENV (default: dev).
 """
+
 import hashlib
 import json
 import os
@@ -27,8 +28,17 @@ ENV_OVERRIDES = {
 }
 
 # Settings that change the ANSWERS. Their hash is the config fingerprint.
-ANSWER_FIELDS = ["mode", "embedding_model_id", "embedding_dimensions", "generation_model_id",
-                 "temperature", "max_tokens", "chunk_size", "chunk_overlap", "top_k"]
+ANSWER_FIELDS = [
+    "mode",
+    "embedding_model_id",
+    "embedding_dimensions",
+    "generation_model_id",
+    "temperature",
+    "max_tokens",
+    "chunk_size",
+    "chunk_overlap",
+    "top_k",
+]
 
 # Settings baked into the INDEX. If any differ from the index's manifest, rebuild.
 INDEX_FIELDS = ["mode", "embedding_model_id", "embedding_dimensions", "chunk_size", "chunk_overlap"]
@@ -80,9 +90,9 @@ def _read_yaml(path: Path) -> dict:
 def load_settings(environment: str | None = None) -> Settings:
     environment = environment or os.getenv("DOCUMIND_ENV", "dev")
 
-    values = _read_yaml(CONFIG_DIR / "default.yaml")              # layer 1
+    values = _read_yaml(CONFIG_DIR / "default.yaml")  # layer 1
     values.update(_read_yaml(CONFIG_DIR / f"{environment}.yaml"))  # layer 2
-    for env_var, field_name in ENV_OVERRIDES.items():              # layer 3
+    for env_var, field_name in ENV_OVERRIDES.items():  # layer 3
         if os.getenv(env_var):
             values[field_name] = os.getenv(env_var)
 

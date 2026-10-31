@@ -4,6 +4,7 @@ Command line entry point.
   python -m documind.cli index
   python -m documind.cli ask "How many days of annual leave do I get?"
 """
+
 import argparse
 import json
 

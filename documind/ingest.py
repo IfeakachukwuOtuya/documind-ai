@@ -1,4 +1,3 @@
-
 """
 STEP 1 of indexing: load documents and cut them into chunks.
 
@@ -6,14 +5,15 @@ WHY CHUNK: a model can't read 500 pages per question, and search works best on
 small, focused pieces. Each chunk keeps a record of which file it came from,
 so answers can cite their source.
 """
+
 from dataclasses import dataclass
 from pathlib import Path
 
 
 @dataclass
 class Chunk:
-    chunk_id: str   # e.g. "annual_leave_policy.md#2"
-    source: str     # file name, used for citations
+    chunk_id: str  # e.g. "annual_leave_policy.md#2"
+    source: str  # file name, used for citations
     text: str
 
 
@@ -26,10 +26,10 @@ def load_documents(docs_dir: str) -> list[tuple[str, str]]:
             docs.append((path.name, path.read_text(encoding="utf-8")))
         elif suffix == ".pdf":
             from pypdf import PdfReader
+
             pages = [page.extract_text() or "" for page in PdfReader(path).pages]
             docs.append((path.name, "\n\n".join(pages)))
     return docs
-
 
 
 def chunk_text(text: str, size: int, overlap: int) -> list[str]:
@@ -46,13 +46,13 @@ def chunk_text(text: str, size: int, overlap: int) -> list[str]:
         if current and len(current) + len(para) + 2 > size:
             chunks.append(current)
             tail = current[-overlap:] if overlap else ""
-            current = tail[tail.find(" ") + 1:] if " " in tail else tail  # start on a whole word
+            current = tail[tail.find(" ") + 1 :] if " " in tail else tail  # start on a whole word
         current = f"{current}\n\n{para}" if current else para
 
         # A single very long paragraph still has to be split.
         while len(current) > size:
             chunks.append(current[:size])
-            current = current[size - overlap:]
+            current = current[size - overlap :]
 
     if current:
         chunks.append(current)

@@ -1,8 +1,8 @@
-
 """
 STEP 3 of answering: give the model the question plus the retrieved chunks,
 and ask it to answer ONLY from them. This is the "G" in RAG.
 """
+
 from .ingest import Chunk
 
 SYSTEM_PROMPT = """You are DocuMind, an assistant that answers questions using ONLY the document excerpts provided.
@@ -17,9 +17,7 @@ NOT_FOUND = "I couldn't find that in the documents."
 
 def build_user_message(question: str, retrieved: list[tuple[Chunk, float]]) -> str:
     """Wrap each chunk in tags so the model can tell documents apart from the question."""
-    excerpts = "\n\n".join(
-        f'<excerpt source="{chunk.source}">\n{chunk.text}\n</excerpt>' for chunk, _ in retrieved
-    )
+    excerpts = "\n\n".join(f'<excerpt source="{chunk.source}">\n{chunk.text}\n</excerpt>' for chunk, _ in retrieved)
     return f"<excerpts>\n{excerpts}\n</excerpts>\n\nQuestion: {question}"
 
 
@@ -28,6 +26,7 @@ class BedrockGenerator:
 
     def __init__(self, settings):
         import boto3
+
         self.client = boto3.client("bedrock-runtime", region_name=settings.aws_region)
         self.settings = settings
 
@@ -36,8 +35,7 @@ class BedrockGenerator:
             modelId=self.settings.generation_model_id,
             system=[{"text": SYSTEM_PROMPT}],
             messages=[{"role": "user", "content": [{"text": build_user_message(question, retrieved)}]}],
-            inferenceConfig={"temperature": self.settings.temperature,
-                             "maxTokens": self.settings.max_tokens},
+            inferenceConfig={"temperature": self.settings.temperature, "maxTokens": self.settings.max_tokens},
         )
         return response["output"]["message"]["content"][0]["text"]
 

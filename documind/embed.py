@@ -1,4 +1,3 @@
-
 """
 STEP 2 of indexing (and step 1 of answering): turn text into vectors.
 
@@ -6,6 +5,7 @@ A vector is a list of numbers that represents meaning. Texts with similar
 meaning get similar vectors, which is what makes semantic search work:
 "holiday entitlement" lands close to "annual leave".
 """
+
 import hashlib
 import json
 import re
@@ -18,6 +18,7 @@ class BedrockEmbedder:
 
     def __init__(self, settings):
         import boto3
+
         self.client = boto3.client("bedrock-runtime", region_name=settings.aws_region)
         self.model_id = settings.embedding_model_id
         self.dim = settings.embedding_dimensions
@@ -45,7 +46,7 @@ class OfflineEmbedder:
         vectors = np.zeros((len(texts), self.dim), dtype="float32")
         for row, text in enumerate(texts):
             for word in re.findall(r"[a-z0-9]+", text.lower()):
-                bucket = int(hashlib.md5(word.encode()).hexdigest(), 16) % self.dim
+                bucket = int(hashlib.md5(word.encode(), usedforsecurity=False).hexdigest(), 16) % self.dim
                 vectors[row, bucket] += 1.0
         norms = np.linalg.norm(vectors, axis=1, keepdims=True)
         return vectors / np.maximum(norms, 1e-9)

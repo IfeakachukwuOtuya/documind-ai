@@ -7,6 +7,7 @@ Two flows:
 
 The [MODULE n] comments mark exactly where each later module plugs in.
 """
+
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -24,7 +25,7 @@ class Answer:
     question: str
     text: str
     sources: list[dict] = field(default_factory=list)  # what was retrieved, with scores
-    config_version: str = ""      # which config file version produced this answer
+    config_version: str = ""  # which config file version produced this answer
     config_fingerprint: str = ""  # hash of every answer-affecting setting
 
 
@@ -41,8 +42,7 @@ class DocuMind:
 
     # ---------------- INDEXING FLOW ----------------
     def build_index(self) -> int:
-        chunks = build_chunks(self.settings.docs_dir, self.settings.chunk_size,
-                              self.settings.chunk_overlap)
+        chunks = build_chunks(self.settings.docs_dir, self.settings.chunk_size, self.settings.chunk_overlap)
         # [MODULE 6 - Security] tag each chunk with who is allowed to see it.
         vectors = self.embedder.embed([c.text for c in chunks])
         self.store = VectorStore(vectors.shape[1])
@@ -75,8 +75,7 @@ class DocuMind:
         if differences:
             details = ", ".join(f"{k}: index={old!r} config={new!r}" for k, (old, new) in differences.items())
             raise IndexMismatchError(
-                f"Index does not match current config ({details}). "
-                "Rebuild it: python -m documind.cli index"
+                f"Index does not match current config ({details}). Rebuild it: python -m documind.cli index"
             )
 
     # ---------------- ANSWERING FLOW ----------------
@@ -97,8 +96,11 @@ class DocuMind:
         # [MODULE 5 - Guardrails] check the OUTPUT: grounded? cited? safe?
         # [MODULE 9 - Governance] write an audit log entry (question, sources, answer, config version).
 
-        sources = [{"chunk_id": c.chunk_id, "source": c.source, "score": round(s, 3)}
-                   for c, s in retrieved]
-        return Answer(question=question, text=text, sources=sources,
-                      config_version=self.settings.config_version,
-                      config_fingerprint=self.settings.fingerprint())
+        sources = [{"chunk_id": c.chunk_id, "source": c.source, "score": round(s, 3)} for c, s in retrieved]
+        return Answer(
+            question=question,
+            text=text,
+            sources=sources,
+            config_version=self.settings.config_version,
+            config_fingerprint=self.settings.fingerprint(),
+        )

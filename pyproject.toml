@@ -1,0 +1,25 @@
+
+
+# Settings for the team's quality tools. One file, so everyone runs the same checks.
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+# E/W: style errors, F: real bugs (unused imports, undefined names), I: import order,
+# B: common bug patterns, UP: modern Python syntax, S: security issues
+select = ["E", "W", "F", "I", "B", "UP", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests use plain `assert`, which the security rules would otherwise flag.
+"tests/*" = ["S101"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
